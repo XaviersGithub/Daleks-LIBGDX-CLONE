@@ -8,11 +8,25 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.TimeUtils;
+
+import java.util.Iterator;
 
 public class Drop extends ApplicationAdapter {
+	// constants
+	public static final int WORLD_WIDTH = 800;
+	public static final int WORLD_HEIGHT = 480;
+	public static final int SPRITE_SIZE = 64;
+	public static final int RAINDROP_SPEED = 200;
+	public static final int RAINDROP_INTERVAL = 1_000_000_000;
+	public static final int BUCKET_SPEED = 200;
+
+	// fields
 	private Texture dropImage;
 	private Texture bucketImage;
 	private Sound dropSound;
@@ -20,6 +34,8 @@ public class Drop extends ApplicationAdapter {
 	private OrthographicCamera camera;
 	private SpriteBatch batch;
 	private Rectangle bucket;
+	private Array<Rectangle> raindrops;
+	private long lastDropTime;
 
 	@Override
 	public void create () {
@@ -37,15 +53,19 @@ public class Drop extends ApplicationAdapter {
 
 		// create the camera and SpriteBatch
 		camera = new OrthographicCamera();
-		camera.setToOrtho(false, 800, 480);
+		camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
 		batch = new SpriteBatch();
 
 		// setup the bucket object
 		bucket = new Rectangle();
-		bucket.x = 800 / 2 - 64 / 2;
+		bucket.x = WORLD_WIDTH / 2 - SPRITE_SIZE / 2;
 		bucket.y = 20;
-		bucket.width = 64;
-		bucket.height = 64;
+		bucket.width = SPRITE_SIZE;
+		bucket.height = SPRITE_SIZE;
+
+		// setup the raindrops
+		raindrops = new Array<Rectangle>();
+		spawnRaindrop();
 	}
 
 	@Override
@@ -56,6 +76,9 @@ public class Drop extends ApplicationAdapter {
 		batch.setProjectionMatrix(camera.combined);
 		batch.begin();
 		batch.draw(bucketImage, bucket.x, bucket.y);
+		for (Rectangle raindrop: raindrops) {
+			batch.draw(dropImage, raindrop.x, raindrop.y);
+		}
 		batch.end();
 
 		// have bucket follow the mouse
@@ -63,22 +86,59 @@ public class Drop extends ApplicationAdapter {
 			Vector3 touchPos = new Vector3();
 			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
 			camera.unproject(touchPos);
-			bucket.x = touchPos.x - 64 / 2;
+			bucket.x = touchPos.x - SPRITE_SIZE / 2;
 		}
 
-		// Use cursor arrow keys to move the bucket
-		if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-			bucket.x -= 200 * Gdx.graphics.getDeltaTime();
-		if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-			bucket.x += 200 * Gdx.graphics.getDeltaTime();
-		if (bucket.x < 0)
+		// use cursor arrow keys to move the bucket
+		if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+			bucket.x -= BUCKET_SPEED * Gdx.graphics.getDeltaTime();
+		}
+		if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+			bucket.x += BUCKET_SPEED * Gdx.graphics.getDeltaTime();
+		}
+
+		// constrain bucket x coordinate to screen width limits
+		if (bucket.x < 0) {
 			bucket.x = 0;
-		if (bucket.x > 800 - 64)
-			bucket.x = 800 - 64;
+		}
+		if (bucket.x > WORLD_WIDTH - SPRITE_SIZE) {
+			bucket.x = WORLD_WIDTH - SPRITE_SIZE;
+		}
+
+		// add a new raindrop if it is time
+		if (TimeUtils.nanoTime() - lastDropTime > RAINDROP_INTERVAL) {
+			spawnRaindrop();
+		}
+
+		// move the raindrops
+		for (Iterator<Rectangle> iter = raindrops.iterator(); iter.hasNext(); ) {
+			Rectangle raindrop = iter.next();
+			raindrop.y -= RAINDROP_SPEED * Gdx.graphics.getDeltaTime();
+
+			// check to see if caught in bucket
+			if (raindrop.overlaps(bucket)) {
+				dropSound.play();
+				iter.remove();
+			}
+		}
 	}
 	
 	@Override
 	public void dispose () {
+		dropImage.dispose();
+		bucketImage.dispose();
+		dropSound.dispose();
+		rainMusic.dispose();
+		batch.dispose();
+	}
 
+	private void spawnRaindrop() {
+		Rectangle raindrop = new Rectangle();
+		raindrop.x = MathUtils.random(0, WORLD_WIDTH - SPRITE_SIZE);
+		raindrop.y = WORLD_HEIGHT;
+		raindrop.width = SPRITE_SIZE;
+		raindrop.height = SPRITE_SIZE;
+		raindrops.add(raindrop);
+		lastDropTime = TimeUtils.nanoTime();
 	}
 }
