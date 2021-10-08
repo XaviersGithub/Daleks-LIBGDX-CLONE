@@ -41,6 +41,7 @@ public class Drop extends ApplicationAdapter {
 	private Texture tardisimg;
 	private Texture checkerImg;
 	private Sound dropSound;
+	private Sound tardissound;
 	private Sound losesound;
 	private Music rainMusic;
 	private OrthographicCamera camera;
@@ -70,6 +71,7 @@ public class Drop extends ApplicationAdapter {
 
 		// load the drop sound effect and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
+		tardissound = Gdx.audio.newSound(Gdx.files.internal("tardissound.mp3"));
 		losesound = Gdx.audio.newSound(Gdx.files.internal("lose.mp3"));
 		//rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
 
@@ -109,7 +111,8 @@ public class Drop extends ApplicationAdapter {
 
 	@Override
 	public void render () {
-		if (bucket.x == 0 && bucket.y == 15 *64) {
+		if (bucket.x == 0 && bucket.y == 15 *64 && !won) {
+			tardissound.play(0.3f, 1, 1);
 			won = true;
 		}
 		ScreenUtils.clear(0, 0, 0.2f, 1);
@@ -190,7 +193,7 @@ public class Drop extends ApplicationAdapter {
 
 			// check to see if caught in bucket
 			if (raindrop.overlaps(bucket)) {
-				dropSound.play();
+				dropSound.play(0.3f, 1, 1);
 				raindrops.removeIndex(i);
 			}
 		}
@@ -204,7 +207,7 @@ public class Drop extends ApplicationAdapter {
 			for (int k = 0; k < daleks.size; k++) {
 			if (daleks.get(k) != raindrop) {
 			if (raindrop.x == daleks.get(k).x && raindrop.y == daleks.get(k).y) {
-				dropSound.play();
+				dropSound.play(0.3f, 1, 1);
 				daleks.removeIndex(i);
 			}
 			if (bucket.overlaps(raindrop)) {
