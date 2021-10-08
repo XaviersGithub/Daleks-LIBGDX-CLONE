@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -20,6 +21,8 @@ import org.w3c.dom.css.Rect;
 
 import java.math.MathContext;
 import java.util.Iterator;
+
+import javax.lang.model.util.ElementScanner6;
 
 public class Drop extends ApplicationAdapter {
 	// constants
@@ -51,6 +54,7 @@ public class Drop extends ApplicationAdapter {
 	private Rectangle tardis;
 	private Array<Rectangle> checkerlist;
 	private long lastDropTime;
+	private Vector2 lastpos;
 	private long lastdalektime;
 
 
@@ -78,8 +82,9 @@ public class Drop extends ApplicationAdapter {
 
 		// setup the bucket object
 		bucket = new Rectangle();
-		bucket.x = MathUtils.random(4, 8) * 64;;
-		bucket.y = MathUtils.random(4, 8) * 64;;
+		bucket.x = MathUtils.random(4, 8) * 64;
+		bucket.y = MathUtils.random(4, 8) * 64;
+		lastpos = new Vector2(bucket.x, bucket.y);
 		bucket.width = SPRITE_SIZE;
 		bucket.height = SPRITE_SIZE;
 
@@ -130,11 +135,12 @@ public class Drop extends ApplicationAdapter {
 
 		// have bucket follow the mouse
 		if (Gdx.input.justTouched()) {
+			Vector2 templastpos = lastpos;
 
-			
 			Vector3 touchPos = new Vector3();
 			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
 			camera.unproject(touchPos);
+			lastpos = new Vector2(bucket.x, bucket.y);
 			if ( touchPos.x > bucket.x &&  (int) touchPos.x < bucket.x + 64 && touchPos.y < bucket.y && touchPos.y > bucket.y - 64) {
 				bucket.setPosition(bucket.x - 0, bucket.y - 64);
 				dalekstouched();
@@ -166,6 +172,9 @@ public class Drop extends ApplicationAdapter {
 			else if (touchPos.y < bucket.y + 128 && touchPos.y > bucket.y + 64 &&  touchPos.x < bucket.x && touchPos.x > bucket.x - 64) {
 				bucket.setPosition(bucket.x - 64, bucket.y + 64);
 				dalekstouched();
+			}
+			else {
+				lastpos = templastpos;
 			}
 
 			//if ( touchPos.x > bucket.x &&  (int) touchPos.x < bucket.x + 32 && touchPos.y < bucket.y + 64 && touchPos.y > bucket.y) {
@@ -233,16 +242,16 @@ public class Drop extends ApplicationAdapter {
 		if (!won && !lost) {
 		for (int i = 0; i < daleks.size; i++) {
 			Rectangle raindrop = daleks.get(i);
-			if (raindrop.x < bucket.x) {
+			if (raindrop.x < lastpos.x) {
 				raindrop.x += 64;
 			}
-			 if (raindrop.x > bucket.x) {
+			 if (raindrop.x > lastpos.x) {
 				raindrop.x -= 64;
 			}
-			 if (raindrop.y < bucket.y) {
+			 if (raindrop.y < lastpos.y) {
 				raindrop.y += 64;
 			}
-			 if (raindrop.y > bucket.y) {
+			 if (raindrop.y > lastpos.y) {
 				raindrop.y -= 64;
 			}
 		}
